@@ -1,50 +1,44 @@
 package server;
 
 import View.ChatClientGUI;
+import View.VistaCliente;
 import java.io.*;
 import java.net.Socket;
 
 public class ChatService {
-
-    private static final String SERVER_ADDRESS = "localhost";
-    private static final int SERVER_PORT = 12345;
-
+private PrintWriter out;
     private Socket socket;
-    private PrintWriter out;
-    private BufferedReader in;
+    private final VistaCliente view;
 
-    private final ChatClientGUI view;
-
-    public ChatService(ChatClientGUI view) {
+    public ChatService(VistaCliente view) {
         this.view = view;
     }
 
     public void start() {
         try {
-            // Conexión al servidor
-            socket = new Socket(SERVER_ADDRESS, SERVER_PORT);
+            socket = new Socket("localhost", 12345);  // Connect to server on localhost and port 12345
             out = new PrintWriter(socket.getOutputStream(), true);
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-
-            // Hilo para recibir mensajes del servidor
-            new Thread(() -> {
-                String serverMessage;
-                try {
-                    while ((serverMessage = in.readLine()) != null) {
-                        view.appendMessage(serverMessage);  // Mostrar mensaje en la vista
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }).start();
+            view.appendMessage("Connected to the chat server.");
         } catch (IOException e) {
+            view.appendMessage("Unable to connect to the server.");
             e.printStackTrace();
         }
     }
 
     public void sendMessage(String message) {
-        if (!message.isEmpty()) {
-            out.println(message);  // Enviar mensaje al servidor
+        if (out != null) {
+            out.println(message);
+        } else {
+            view.appendMessage("Error: Not connected to server.");
+        }
+    }
+
+    public void close() {
+        try {
+            if (out != null) out.close();
+            if (socket != null) socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }
